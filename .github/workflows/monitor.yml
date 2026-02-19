@@ -1,0 +1,124 @@
+name: Reddit Monitor
+
+on:
+  schedule:
+    # Daily Mon-Fri at 8 AM UTC
+    - cron: '0 8 * * 1-5'
+    # Weekly comprehensive on Monday at 9 AM UTC
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'Run mode'
+        required: true
+        default: 'daily'
+        type: choice
+        options:
+          - daily
+          - weekly
+          - all
+
+permissions:
+  contents: write
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          token: ${{ github.token }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Determine run mode
+        id: mode
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "mode=${{ github.event.inputs.mode }}" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event.schedule }}" = "0 9 * * 1" ]; then
+            echo "mode=weekly" >> $GITHUB_OUTPUT
+          else
+            echo "mode=daily" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Collect Reddit data
+        run: python -m reddit_monitor monitor --${{ steps.mode.outputs.mode }}
+
+      - name: Read run summary
+        id: summary
+        run: |
+          if [ -f data/last_run_summary.json ]; then
+            echo "new_posts=$(python -c "import json; print(json.load(open('data/last_run_summary.json'))['new_post_count'])")" >> $GITHUB_OUTPUT
+            echo "has_urgent=$(python -c "import json; print(json.load(open('data/last_run_summary.json')).get('has_urgent', False))")" >> $GITHUB_OUTPUT
+          else
+            echo "new_posts=0" >> $GITHUB_OUTPUT
+            echo "has_urgent=False" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Generate brand intelligence report
+        if: steps.summary.outputs.new_posts != '0'
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python -m reddit_monitor analyze
+
+      - name: Generate email HTML
+        if: steps.summary.outputs.new_posts != '0'
+        run: |
+          python -c "
+          import os
+          from reddit_monitor.email_report import markdown_to_html
+          # Prefer the AI analysis report for email; fall back to raw listing
+          report_file = 'data/reports/analysis.md'
+          if not os.path.exists(report_file):
+              report_file = 'data/reports/latest.md'
+          with open(report_file) as f:
+              md = f.read()
+          html = markdown_to_html(md)
+          with open('data/reports/latest.html', 'w') as f:
+              f.write(html)
+          "
+
+      - name: Send email report
+        if: steps.summary.outputs.new_posts != '0'
+        uses: dawidd6/action-send-mail@v3
+        with:
+          server_address: ${{ secrets.SMTP_SERVER }}
+          server_port: ${{ secrets.SMTP_PORT }}
+          username: ${{ secrets.SMTP_USERNAME }}
+          password: ${{ secrets.SMTP_PASSWORD }}
+          subject: >-
+            ${{ steps.summary.outputs.has_urgent == 'True'
+              && format('{0} URGENT: {1} new posts ({2})',
+                  '[Reddit Monitor]',
+                  steps.summary.outputs.new_posts,
+                  steps.mode.outputs.mode)
+              || format('{0} {1} new posts ({2})',
+                  '[Reddit Monitor]',
+                  steps.summary.outputs.new_posts,
+                  steps.mode.outputs.mode) }}
+          to: ${{ secrets.EMAIL_RECIPIENTS }}
+          from: Reddit Monitor <${{ secrets.SMTP_USERNAME }}>
+          html_body: file://data/reports/latest.html
+          convert_markdown: false
+
+      - name: Update dashboard
+        run: |
+          # Prefer AI analysis for dashboard; fall back to raw listing
+          if [ -f data/reports/analysis.md ]; then
+            cp data/reports/analysis.md docs/report.md
+          else
+            cp data/reports/latest.md docs/report.md
+          fi
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/ docs/report.md
+          git diff --staged --quiet || git commit -m "Update monitor state and reports [skip ci]"
+          git push

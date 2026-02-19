@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reddit Monitor — Turn Reddit into Brand Intelligence</title>
+    <meta name="description" content="AI-powered competitive analysis from real Reddit discussions. Enter your brand, get a strategic report in minutes.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        /* ── Page-specific styles ── */
+
+        /* Hero section */
+        .hero-section {
+            padding: 5rem 0 4rem;
+            text-align: center;
+            border-bottom: 1px solid var(--border);
+        }
+        .hero-section h1 {
+            font-size: 2.4rem;
+            font-weight: 700;
+            letter-spacing: -0.04em;
+            color: var(--accent);
+            line-height: 1.15;
+        }
+        .hero-section .hero-sub {
+            font-size: 1.05rem;
+            color: var(--text-secondary);
+            margin-top: 0.75rem;
+            max-width: 520px;
+            margin-left: auto;
+            margin-right: auto;
+            line-height: 1.6;
+        }
+        .hero-cta {
+            margin-top: 2rem;
+        }
+        .hero-cta .btn-primary {
+            font-size: 1rem;
+            padding: 0.75rem 2rem;
+            border-radius: 8px;
+        }
+        .hero-fork {
+            margin-top: 0.75rem;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+        .hero-fork a {
+            color: var(--text-secondary);
+            text-decoration: underline;
+            text-underline-offset: 2px;
+        }
+        .hero-fork a:hover {
+            color: var(--accent);
+        }
+
+        /* How it works */
+        .how-section {
+            padding: 4rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .how-section h2 {
+            text-align: center;
+            font-size: 1.3rem;
+            margin-bottom: 2.5rem;
+        }
+        .steps-row {
+            display: flex;
+            gap: 2rem;
+        }
+        .step-card {
+            flex: 1;
+            text-align: center;
+        }
+        .step-circle {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: var(--bg-raised);
+            border: 1.5px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 0.75rem;
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: var(--text-secondary);
+        }
+        .step-card h3 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            color: var(--accent);
+            margin: 0 0 0.35rem;
+        }
+        .step-card p {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            line-height: 1.55;
+        }
+
+        /* Preview section */
+        .preview-section {
+            padding: 4rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .preview-section h2 {
+            text-align: center;
+            font-size: 1.3rem;
+            margin-bottom: 0.4rem;
+        }
+        .preview-sub {
+            text-align: center;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 2rem;
+        }
+        .preview-card {
+            background: var(--bg-raised);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.75rem;
+        }
+        .preview-card h3 {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: var(--accent);
+            margin: 0 0 0.75rem;
+        }
+        .preview-card ul {
+            margin: 0 0 1.5rem 1.25rem;
+        }
+        .preview-card li {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+            margin: 0.4rem 0;
+            line-height: 1.55;
+        }
+
+        /* Pricing section */
+        .pricing-section {
+            padding: 4rem 0;
+            border-bottom: 1px solid var(--border);
+            text-align: center;
+        }
+        .pricing-section h2 {
+            font-size: 1.3rem;
+            margin-bottom: 0.5rem;
+        }
+        .pricing-text {
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+            margin-bottom: 1.5rem;
+        }
+        .pricing-support {
+            display: inline-block;
+            text-align: left;
+        }
+        .pricing-note {
+            margin-top: 0.75rem;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        /* Form section */
+        .form-section-wrap {
+            padding: 4rem 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .form-section-wrap h2 {
+            text-align: center;
+            font-size: 1.3rem;
+            margin-bottom: 2rem;
+        }
+        .form-fields {
+            max-width: 540px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+        .form-group label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: var(--text);
+            margin-bottom: 0.35rem;
+        }
+        .label-hint {
+            font-weight: 400;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            font-family: inherit;
+            font-size: 0.9rem;
+            color: var(--text);
+            background: var(--bg-raised);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 0.6rem 0.75rem;
+            transition: border-color 0.2s;
+            resize: vertical;
+        }
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #444;
+        }
+        .form-group input::placeholder,
+        .form-group textarea::placeholder {
+            color: var(--text-muted);
+        }
+        .form-hint {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+        .form-actions {
+            text-align: center;
+            margin-top: 0.5rem;
+        }
+        .btn-generate {
+            background: var(--accent);
+            color: var(--bg);
+            border-color: var(--accent);
+            font-size: 1rem;
+            padding: 0.75rem 2rem;
+            border-radius: 8px;
+        }
+        .btn-generate:hover {
+            opacity: 0.9;
+        }
+        .form-limit {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 0.5rem;
+        }
+
+        /* Report section */
+        .report-section-wrap {
+            padding: 3rem 0;
+        }
+
+        /* Progress area */
+        #progress {
+            text-align: center;
+            padding: 2rem 0;
+        }
+        .progress-steps {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            align-items: center;
+        }
+        .progress-step {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            transition: color 0.3s;
+        }
+        .progress-step.active {
+            color: var(--text);
+        }
+        .progress-step.done {
+            color: var(--green);
+        }
+        .progress-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--text-muted);
+            flex-shrink: 0;
+            transition: background 0.3s;
+        }
+        .progress-step.active .progress-dot {
+            background: var(--accent);
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        .progress-step.done .progress-dot {
+            background: var(--green);
+        }
+
+        .error-msg {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 8px;
+            padding: 1rem 1.25rem;
+            font-size: 0.9rem;
+            color: var(--text);
+            text-align: left;
+            max-width: 540px;
+            margin: 0 auto;
+        }
+        .error-msg strong {
+            color: var(--urgent);
+        }
+
+        /* Report actions */
+        #report-actions {
+            display: none;
+            gap: 0.75rem;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 1.5rem;
+        }
+        #report-stats {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+
+        /* Nav report button */
+        .nav-report-btn {
+            background: var(--accent);
+            color: var(--bg);
+            border-color: var(--accent);
+            font-size: 0.78rem;
+            padding: 0.3rem 0.7rem;
+        }
+        .nav-report-btn:hover {
+            opacity: 0.9;
+        }
+
+        /* Link button */
+        .link-btn {
+            background: none;
+            border: none;
+            color: var(--link);
+            cursor: pointer;
+            font-family: inherit;
+            font-size: inherit;
+            padding: 0;
+            text-decoration: underline;
+            text-underline-offset: 2px;
+        }
+        .link-btn:hover {
+            color: var(--accent);
+        }
+
+        /* Mobile */
+        @media (max-width: 640px) {
+            .hero-section { padding: 3rem 0 2.5rem; }
+            .hero-section h1 { font-size: 1.7rem; }
+            .steps-row { flex-direction: column; gap: 1.5rem; }
+            .step-card { text-align: left; display: flex; gap: 1rem; align-items: flex-start; }
+            .step-circle { margin: 0; flex-shrink: 0; }
+            .step-card-text { flex: 1; }
+        }
+    </style>
+</head>
+<body>
+    <!-- ── Sticky Nav ── -->
+    <nav>
+        <div class="nav-inner">
+            <span class="nav-brand">Reddit Monitor</span>
+            <a href="#report" class="btn nav-report-btn" id="nav-report-btn" style="display:none">View Report</a>
+        </div>
+    </nav>
+
+    <main>
+        <!-- ══════════════ SECTION 1: HERO ══════════════ -->
+        <section id="hero" class="hero-section">
+            <h1>Turn Reddit into Brand Intelligence</h1>
+            <p class="hero-sub">Get AI-powered competitive analysis from real Reddit discussions. Enter your brand, get a strategic report in minutes.</p>
+            <div class="hero-cta">
+                <a href="#form" class="btn btn-primary">Get Your Report</a>
+            </div>
+            <p class="hero-fork">Want to self-host? <a href="https://github.com/JBackend/reddit-monitor" target="_blank">Fork on GitHub</a></p>
+        </section>
+
+        <!-- ══════════════ SECTION 2: HOW IT WORKS ══════════════ -->
+        <section id="how-it-works" class="how-section">
+            <h2>How It Works</h2>
+            <div class="steps-row">
+                <div class="step-card">
+                    <div class="step-circle">1</div>
+                    <div class="step-card-text">
+                        <h3>Monitor</h3>
+                        <p>Scans Reddit for your brand, competitors, and industry keywords</p>
+                    </div>
+                </div>
+                <div class="step-card">
+                    <div class="step-circle">2</div>
+                    <div class="step-card-text">
+                        <h3>Analyze</h3>
+                        <p>AI reads every post and comment to extract strategic insights</p>
+                    </div>
+                </div>
+                <div class="step-card">
+                    <div class="step-circle">3</div>
+                    <div class="step-card-text">
+                        <h3>Report</h3>
+                        <p>Get competitive landscape, pain points, recommendations, and quotes</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ══════════════ SECTION 3: PREVIEW ══════════════ -->
+        <section id="preview" class="preview-section">
+            <h2>What You'll Get</h2>
+            <p class="preview-sub">Here's a sample from a real brand intelligence report</p>
+            <div class="preview-card">
+                <h3>Executive Summary</h3>
+                <ul>
+                    <li>Linear is strongly favored by engineering teams for its speed and keyboard-first UX, but perceived as "too opinionated" for cross-functional teams with non-technical stakeholders.</li>
+                    <li>Jira remains the dominant competitor by install base, but Reddit sentiment is overwhelmingly negative — "bloated", "slow", "over-engineered" appear in nearly every thread.</li>
+                    <li>Buyers prioritize speed, clean UI, and GitHub integration. Teams switching from Jira cite "developer happiness" as the primary driver.</li>
+                    <li>Key market gap: no tool fully solves project management for mixed teams (engineering + design + marketing) without forcing one group to compromise.</li>
+                </ul>
+                <h3>Competitive Landscape</h3>
+                <div class="table-wrap">
+                    <table>
+                        <tr>
+                            <th>Competitor</th>
+                            <th>Mentions</th>
+                            <th>Core Strengths</th>
+                            <th>Core Weaknesses</th>
+                            <th>Position vs. Brand</th>
+                        </tr>
+                        <tr>
+                            <td><strong>Jira</strong></td>
+                            <td>142</td>
+                            <td>Enterprise adoption, deep customization</td>
+                            <td>"Bloated", "slow", "config nightmare"</td>
+                            <td>Incumbent — users actively seeking alternatives</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Asana</strong></td>
+                            <td>58</td>
+                            <td>Cross-functional, good for non-engineers</td>
+                            <td>"Not built for devs", limited Git integration</td>
+                            <td>Different audience — PM/marketing teams</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Shortcut</strong></td>
+                            <td>31</td>
+                            <td>Balance of simplicity and power</td>
+                            <td>Smaller ecosystem, fewer integrations</td>
+                            <td>Closest direct competitor for dev teams</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ══════════════ SECTION 4: PRICING ══════════════ -->
+        <section id="pricing" class="pricing-section">
+            <h2>Free. No paywalls. No trials.</h2>
+            <p class="pricing-text">If the insights help your business, pay what it's worth.</p>
+            <div class="pricing-support">
+                <div class="support-box">
+                    <span>E-TRANSFER</span>
+                    <strong>justbedi7@gmail.com</strong>
+                </div>
+            </div>
+            <p class="pricing-note">~$2.50/report covers AI costs. Most people send $10 for a month.</p>
+        </section>
+
+        <!-- ══════════════ SECTION 5: THE FORM ══════════════ -->
+        <section id="form" class="form-section-wrap">
+            <h2>Generate Your Report</h2>
+            <div class="form-fields">
+                <div class="form-group">
+                    <label for="brand-name">Brand name</label>
+                    <input type="text" id="brand-name" placeholder="e.g. Rise People" required>
+                </div>
+                <div class="form-group">
+                    <label for="aliases">Aliases</label>
+                    <textarea id="aliases" rows="3" placeholder="rise people&#10;risepeople.com&#10;rise hr"></textarea>
+                    <p class="form-hint">One per line — lowercase variations, domains, abbreviations</p>
+                </div>
+                <div class="form-group">
+                    <label for="competitors">Competitors</label>
+                    <textarea id="competitors" rows="3" placeholder="humi&#10;payworks&#10;gusto"></textarea>
+                    <p class="form-hint">One per line</p>
+                </div>
+                <div class="form-group">
+                    <label for="keywords">Industry keywords</label>
+                    <textarea id="keywords" rows="3" placeholder="payroll&#10;hr software&#10;hris"></textarea>
+                    <p class="form-hint">One per line</p>
+                </div>
+                <div class="form-group">
+                    <label for="subreddits">Subreddits</label>
+                    <textarea id="subreddits" rows="3" placeholder="humanresources&#10;payroll&#10;smallbusiness"></textarea>
+                    <p class="form-hint">One per line, without r/</p>
+                </div>
+                <div class="form-actions">
+                    <button class="btn btn-generate" id="btn-generate">Generate Report</button>
+                    <p class="form-limit">2 free runs per day</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- ══════════════ SECTION 6: REPORT ══════════════ -->
+        <section id="report" class="report-section-wrap" style="display:none">
+            <div id="progress">
+                <div class="progress-steps">
+                    <div class="progress-step" data-step="1">
+                        <div class="progress-dot"></div>
+                        <span>Searching Reddit...</span>
+                    </div>
+                    <div class="progress-step" data-step="2">
+                        <div class="progress-dot"></div>
+                        <span>Fetching comments for top posts...</span>
+                    </div>
+                    <div class="progress-step" data-step="3">
+                        <div class="progress-dot"></div>
+                        <span>Analyzing with Claude...</span>
+                    </div>
+                    <div class="progress-step" data-step="4">
+                        <div class="progress-dot"></div>
+                        <span>Generating report...</span>
+                    </div>
+                </div>
+            </div>
+            <p id="report-stats"></p>
+            <div id="report-actions">
+                <button class="btn btn-primary" onclick="downloadReport()">Download Markdown</button>
+                <a href="#form" class="btn btn-done">Run Again</a>
+            </div>
+            <div id="report-content"></div>
+        </section>
+    </main>
+
+    <!-- ── Footer ── -->
+    <footer>
+        <div class="footer-inner">
+            <div class="value-block">
+                <h3>Value-based pricing</h3>
+                <p>This tool is free — no paywalls, no locked features, no trials. If the insights help your business, pay what it's worth.</p>
+                <div class="support-box">
+                    <span>E-TRANSFER</span>
+                    <strong>justbedi7@gmail.com</strong>
+                </div>
+                <p class="support-hint">~$2.50 per report covers the AI cost. Most people send $10 for a month.</p>
+            </div>
+            <div class="footer-links">
+                <a href="https://github.com/JBackend/reddit-monitor" target="_blank">Self-host on GitHub</a>
+                <span class="dot">&middot;</span>
+                <span class="footer-muted">Built with Claude + Reddit public API</span>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+    // ── Accordions (delegated) ──
+    document.addEventListener('click', e => {
+        const header = e.target.closest('.accordion-header');
+        if (!header) return;
+        const acc = header.parentElement;
+        const wasOpen = acc.classList.contains('open');
+        acc.parentElement.querySelectorAll(':scope > .accordion').forEach(a => a.classList.remove('open'));
+        if (!wasOpen) acc.classList.add('open');
+    });
+
+    // ── Progress animation ──
+    let progressInterval = null;
+    function showProgress(msg, step) {
+        const progressEl = document.getElementById('progress');
+        progressEl.style.display = 'block';
+
+        // Reset all steps
+        progressEl.querySelectorAll('.progress-step').forEach(s => {
+            s.classList.remove('active', 'done');
+        });
+
+        // Mark current step active
+        const currentStep = progressEl.querySelector(`.progress-step[data-step="${step}"]`);
+        if (currentStep) currentStep.classList.add('active');
+
+        // Mark previous steps done
+        for (let i = 1; i < step; i++) {
+            const prev = progressEl.querySelector(`.progress-step[data-step="${i}"]`);
+            if (prev) prev.classList.add('done');
+        }
+    }
+
+    function startProgressAnimation() {
+        const schedule = [
+            { step: 1, delay: 0 },
+            { step: 2, delay: 5000 },
+            { step: 3, delay: 15000 },
+            { step: 4, delay: 30000 }
+        ];
+
+        showProgress('Searching Reddit...', 1);
+
+        schedule.forEach(({ step, delay }) => {
+            if (delay === 0) return;
+            const t = setTimeout(() => showProgress('', step), delay);
+            if (!progressInterval) progressInterval = [];
+            progressInterval.push(t);
+        });
+    }
+
+    function stopProgressAnimation() {
+        if (Array.isArray(progressInterval)) {
+            progressInterval.forEach(t => clearTimeout(t));
+        }
+        progressInterval = null;
+    }
+
+    // ── Form submission ──
+    document.getElementById('btn-generate').addEventListener('click', async () => {
+        // Check rate limit (2 per day from localStorage)
+        const runs = JSON.parse(localStorage.getItem('rm_runs') || '[]');
+        const today = new Date().toDateString();
+        const todayRuns = runs.filter(r => new Date(r).toDateString() === today);
+        if (todayRuns.length >= 2) {
+            alert('You\'ve used your 2 free runs for today. Come back tomorrow, or self-host for unlimited runs.');
+            return;
+        }
+
+        // Collect form data
+        const brand = document.getElementById('brand-name').value.trim();
+        if (!brand) { document.getElementById('brand-name').focus(); return; }
+
+        const lines = v => v.split('\n').map(l => l.trim()).filter(Boolean);
+        const body = {
+            brand: brand,
+            aliases: lines(document.getElementById('aliases').value),
+            competitors: lines(document.getElementById('competitors').value),
+            keywords: lines(document.getElementById('keywords').value),
+            subreddits: lines(document.getElementById('subreddits').value),
+        };
+
+        // Save form to localStorage
+        localStorage.setItem('rm_form', JSON.stringify(body));
+
+        // Show report section + progress
+        document.getElementById('report').style.display = 'block';
+        document.getElementById('report').scrollIntoView({ behavior: 'smooth' });
+        document.getElementById('report-actions').style.display = 'none';
+        document.getElementById('report-content').innerHTML = '';
+        document.getElementById('report-stats').textContent = '';
+        startProgressAnimation();
+
+        try {
+            const resp = await fetch('/api/analyze', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body),
+            });
+
+            if (!resp.ok) {
+                const err = await resp.json();
+                throw new Error(err.error || `Server error (${resp.status})`);
+            }
+
+            const data = await resp.json();
+
+            // Save report + timestamp
+            localStorage.setItem('rm_report', data.report);
+            localStorage.setItem('rm_stats', JSON.stringify(data.stats));
+            runs.push(new Date().toISOString());
+            localStorage.setItem('rm_runs', JSON.stringify(runs));
+
+            // Render report
+            renderFullReport(data.report, data.stats);
+
+            // Show nav button
+            document.getElementById('nav-report-btn').style.display = 'inline-block';
+
+        } catch (err) {
+            stopProgressAnimation();
+            document.getElementById('progress').innerHTML =
+                `<div class="error-msg"><strong>Error:</strong> ${err.message}</div>`;
+        }
+    });
+
+    // ── Render full report ──
+    function renderFullReport(markdown, stats) {
+        stopProgressAnimation();
+        document.getElementById('progress').style.display = 'none';
+        const reportEl = document.getElementById('report-content');
+        reportEl.innerHTML = renderReport(markdown);
+
+        // Open first accordion
+        const first = reportEl.querySelector('.accordion');
+        if (first) first.classList.add('open');
+
+        // Show report actions
+        document.getElementById('report-actions').style.display = 'flex';
+
+        // Show stats
+        if (stats) {
+            document.getElementById('report-stats').textContent =
+                `${stats.posts_found || 0} posts found \u00b7 ${stats.posts_analyzed || 0} analyzed \u00b7 ~$${(stats.cost_estimate || 0).toFixed(2)} AI cost`;
+        }
+    }
+
+    // ── Download markdown ──
+    function downloadReport() {
+        const report = localStorage.getItem('rm_report');
+        if (!report) return;
+        const blob = new Blob([report], { type: 'text/markdown' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'brand-intelligence-report.md';
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    // ── Report renderer ──
+    function renderReport(md) {
+        const lines = md.split('\n');
+        const sections = [];
+        let current = null, headerLines = [];
+        for (const line of lines) {
+            if (line.startsWith('## ')) {
+                if (current) sections.push(current);
+                current = { title: line.slice(3).trim(), lines: [] };
+            } else if (current) { current.lines.push(line); }
+            else { headerLines.push(line); }
+        }
+        if (current) sections.push(current);
+
+        let html = renderBlock(headerLines);
+        if (sections.length) {
+            html += '<div class="accordion-group">';
+            sections.forEach((s, i) => {
+                html += `<div class="accordion report-section">
+                    <button class="accordion-header">
+                        <div class="section-number">${i + 1}</div>
+                        <div class="accordion-title"><strong>${inl(s.title)}</strong></div>
+                        <span class="accordion-chevron"></span>
+                    </button>
+                    <div class="accordion-body">${renderBlock(s.lines)}</div>
+                </div>`;
+            });
+            html += '</div>';
+        }
+        return html;
+    }
+
+    function splitTableRow(line) {
+        const trimmed = line.trim().slice(1, -1);
+        const cells = []; let cur = '', bold = false;
+        for (let j = 0; j < trimmed.length; j++) {
+            if (trimmed[j] === '*' && trimmed[j+1] === '*') { bold = !bold; cur += '**'; j++; continue; }
+            if (trimmed[j] === '|' && !bold) { cells.push(cur); cur = ''; continue; }
+            cur += trimmed[j];
+        }
+        cells.push(cur);
+        return cells;
+    }
+
+    function renderBlock(lines) {
+        let html = '', inList = false, inBQ = false, inTbl = false, hdrDone = false;
+        for (let i = 0; i < lines.length; i++) {
+            let ln = lines[i];
+            if (inList && !ln.startsWith('- ')) { html += '</ul>'; inList = false; }
+            if (inBQ && !ln.startsWith('>')) { html += '</blockquote>'; inBQ = false; }
+            if (ln.trim().startsWith('|') && ln.trim().endsWith('|')) {
+                let cells = splitTableRow(ln);
+                if (cells.every(c => /^[\s\-:]+$/.test(c))) { hdrDone = true; continue; }
+                if (!inTbl) { html += '<div class="table-wrap"><table>'; inTbl = true; hdrDone = false; }
+                let tag = !hdrDone ? 'th' : 'td';
+                html += '<tr>' + cells.map(c => `<${tag}>${inl(c.trim())}</${tag}>`).join('') + '</tr>';
+                continue;
+            } else if (inTbl) { html += '</table></div>'; inTbl = false; }
+            if (ln.trim() === '---') { html += '<hr>'; continue; }
+            if (ln.startsWith('### ')) { html += '<h3>' + inl(ln.slice(4)) + '</h3>'; continue; }
+            if (ln.startsWith('# ')) { html += '<h1 class="report-title">' + inl(ln.slice(2)) + '</h1>'; continue; }
+            if (ln.startsWith('- ')) { if (!inList) { html += '<ul>'; inList = true; } html += '<li>' + inl(ln.slice(2)) + '</li>'; continue; }
+            if (/^\d+\.\s/.test(ln)) { html += '<p class="ol-item">' + inl(ln) + '</p>'; continue; }
+            if (ln.startsWith('> ')) { if (!inBQ) { html += '<blockquote>'; inBQ = true; } html += '<p>' + inl(ln.slice(2)) + '</p>'; continue; }
+            if (/^\*[^*]+\*$/.test(ln.trim())) { html += '<p class="meta">' + inl(ln) + '</p>'; continue; }
+            if (ln.trim() === '') continue;
+            html += '<p>' + inl(ln) + '</p>';
+        }
+        if (inList) html += '</ul>';
+        if (inBQ) html += '</blockquote>';
+        if (inTbl) html += '</table></div>';
+        return html;
+    }
+
+    function inl(t) {
+        t = t.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        t = t.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>');
+        t = t.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" target="_blank">$1</a>');
+        t = t.replace(/`([^`]+)`/g, '<code>$1</code>');
+        return t;
+    }
+
+    // ── On page load: restore form inputs ──
+    const savedForm = localStorage.getItem('rm_form');
+    if (savedForm) {
+        try {
+            const f = JSON.parse(savedForm);
+            document.getElementById('brand-name').value = f.brand || '';
+            document.getElementById('aliases').value = (f.aliases || []).join('\n');
+            document.getElementById('competitors').value = (f.competitors || []).join('\n');
+            document.getElementById('keywords').value = (f.keywords || []).join('\n');
+            document.getElementById('subreddits').value = (f.subreddits || []).join('\n');
+        } catch (e) {}
+    }
+
+    // ── On page load: restore last report ──
+    const savedReport = localStorage.getItem('rm_report');
+    if (savedReport) {
+        document.getElementById('report').style.display = 'block';
+        const stats = JSON.parse(localStorage.getItem('rm_stats') || '{}');
+        renderFullReport(savedReport, stats);
+        document.getElementById('nav-report-btn').style.display = 'inline-block';
+    }
+    </script>
+</body>
+</html>

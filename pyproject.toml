@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.backends._legacy:_Backend"
+
+[project]
+name = "reddit-monitor"
+version = "1.0.0"
+description = "Reddit brand monitoring tool — fork, configure, and get automatic reports"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.11"
+
+[project.scripts]
+reddit-monitor = "reddit_monitor.__main__:main"

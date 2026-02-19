@@ -1,0 +1,238 @@
+[brand]
+name = "Rise People"
+aliases = ["rise people", "risepeople", "risepeople.com", "rise hr", "rise payroll"]
+
+[competitors]
+names = ["humi", "payworks", "wagepoint", "knit people", "adp", "dayforce", "ceridian", "deel", "employment hero", "folks hr", "collage hr", "gusto", "bamboohr", "bamboo hr", "rippling"]
+
+[subreddits]
+high_value = ["humanresources", "payroll", "bookkeeping", "personalfinancecanada", "smallbusiness", "smallbusinesscanada", "canadasmallbusiness", "entrepreneurcanada", "entrepreneur", "startup", "sysadmin", "accounting", "cantax", "saas"]
+
+[keywords]
+relevance = ["payroll", "hr software", "hris", "human resources", "onboarding", "benefits admin", "time tracking", "canada", "canadian", "small business", "startup", "employee management"]
+geographic = ["canada", "canadian", "toronto", "vancouver", "montreal", "calgary", "ottawa"]
+
+[[queries.daily]]
+label = "rise_direct"
+query = '"Rise People" OR "RisePeople" OR "risepeople.com"'
+
+[[queries.daily]]
+label = "payroll_canada_recs"
+query = "payroll Canada recommend OR best"
+subreddit = "Payroll"
+
+[[queries.daily]]
+label = "hr_software_canada"
+query = "Canada HR software OR HRIS OR payroll"
+subreddit = "humanresources"
+
+[[queries.daily]]
+label = "competitor_mentions"
+query = '"Humi" OR "Payworks" OR "Wagepoint" OR "Knit People" Canada payroll'
+
+[[queries.weekly]]
+label = "pfc_payroll"
+query = 'payroll OR "HR software" OR employer'
+subreddit = "PersonalFinanceCanada"
+
+[[queries.weekly]]
+label = "smallbiz_canada"
+query = "payroll OR HR software"
+subreddit = "SmallBusinessCanada"
+
+[[queries.weekly]]
+label = "switching_platforms"
+query = "switching OR migrating payroll software Canada"
+
+[[queries.weekly]]
+label = "comparison_threads"
+query = "payroll OR HRIS vs Canada OR Canadian recommend"
+
+# Scraper queries - Rise People
+[[queries.scrape]]
+label = "rise_general"
+query = '"Rise People"'
+
+[[queries.scrape]]
+label = "rise_domain"
+query = '"RisePeople" OR "risepeople.com"'
+
+[[queries.scrape]]
+label = "rise_hr"
+query = '"Rise HR software" OR "Rise payroll Canada"'
+
+[[queries.scrape]]
+label = "rise_payroll"
+query = '"Rise People" payroll OR HR'
+
+[[queries.scrape]]
+label = "rise_r_hr"
+query = "Rise People OR RisePeople"
+subreddit = "humanresources"
+
+[[queries.scrape]]
+label = "rise_r_pfc"
+query = 'Rise People OR RisePeople OR "Rise payroll"'
+subreddit = "PersonalFinanceCanada"
+
+[[queries.scrape]]
+label = "rise_r_canada"
+query = '"Rise People" OR "Rise payroll"'
+subreddit = "canada"
+
+[[queries.scrape]]
+label = "rise_r_smallbiz"
+query = '"Rise People" OR "Rise HR"'
+subreddit = "smallbusiness"
+
+[[queries.scrape]]
+label = "rise_r_payroll"
+query = '"Rise People" OR "risepeople"'
+subreddit = "payroll"
+
+[[queries.scrape]]
+label = "rise_r_startups"
+query = '"Rise People" OR "Rise HR"'
+subreddit = "startups"
+
+# Scraper queries - Competitors
+[[queries.scrape]]
+label = "humi"
+query = '"Humi" HR OR payroll Canada'
+
+[[queries.scrape]]
+label = "humi_sub"
+query = "Humi HR OR payroll"
+subreddit = "humanresources"
+
+[[queries.scrape]]
+label = "employment_hero"
+query = '"Employment Hero" Canada'
+
+[[queries.scrape]]
+label = "knit_people"
+query = '"Knit People" payroll'
+
+[[queries.scrape]]
+label = "adp_canada"
+query = '"ADP Canada" OR "ADP Workforce Now"'
+
+[[queries.scrape]]
+label = "adp_sub"
+query = "ADP payroll Canada"
+subreddit = "PersonalFinanceCanada"
+
+[[queries.scrape]]
+label = "dayforce"
+query = '"Dayforce" OR "Ceridian" Canada payroll OR HR'
+
+[[queries.scrape]]
+label = "dayforce_sub"
+query = "Dayforce OR Ceridian"
+subreddit = "humanresources"
+
+[[queries.scrape]]
+label = "deel"
+query = '"Deel" Canada payroll OR HR'
+
+[[queries.scrape]]
+label = "deel_sub"
+query = "Deel payroll OR HR"
+subreddit = "startups"
+
+[[queries.scrape]]
+label = "folks_hr"
+query = '"Folks HR" Canada'
+
+[[queries.scrape]]
+label = "payworks"
+query = '"Payworks" payroll Canada'
+
+[[queries.scrape]]
+label = "collage_hr"
+query = '"Collage HR" Canada'
+
+[[queries.scrape]]
+label = "collage_sub"
+query = "Collage HR"
+subreddit = "humanresources"
+
+# Scraper queries - Comparisons
+[[queries.scrape]]
+label = "vs_payroll"
+query = '"vs" payroll Canada software'
+
+[[queries.scrape]]
+label = "best_payroll_2025"
+query = "best payroll software Canada 2025 OR 2026"
+
+[[queries.scrape]]
+label = "best_payroll_2024"
+query = "best payroll software Canada 2024"
+
+[[queries.scrape]]
+label = "best_hr_smb"
+query = "best HR software Canada small business"
+
+[[queries.scrape]]
+label = "recommend_payroll"
+query = "payroll software recommendation Canada"
+
+[[queries.scrape]]
+label = "recommend_hr"
+query = "HR platform recommendation Canada startup"
+
+[[queries.scrape]]
+label = "switched_from"
+query = '"switched from" OR "switching from" payroll Canada'
+
+[[queries.scrape]]
+label = "humi_vs"
+query = "Humi vs OR Dayforce vs OR ADP vs Canada"
+
+[[queries.scrape]]
+label = "wish_features"
+query = "wish OR feature OR frustrating payroll OR HRIS Canada"
+subreddit = "humanresources"
+
+[[queries.scrape]]
+label = "payroll_sub"
+query = "Canada software OR recommend OR best OR worst"
+subreddit = "payroll"
+
+[[queries.scrape]]
+label = "accounting_sub"
+query = "payroll software Canada recommend"
+subreddit = "accounting"
+
+[[queries.scrape]]
+label = "frustrating"
+query = "Canadian payroll frustrating OR terrible OR worst OR love OR best"
+
+[[queries.scrape]]
+label = "pfc_payroll_scrape"
+query = "payroll software recommend OR best OR worst"
+subreddit = "PersonalFinanceCanada"
+
+[[queries.scrape]]
+label = "canada_hr"
+query = 'payroll software OR "HR software" Canada'
+subreddit = "canada"
+
+[analysis]
+# Optional: AI-powered brand intelligence using Claude API
+# Set ANTHROPIC_API_KEY as an environment variable (or GitHub Secret) instead of putting it here
+# api_key = "sk-ant-..."
+model = "claude-sonnet-4-20250514"
+free_runs_per_month = 6
+
+[email]
+subject_prefix = "[Reddit Monitor]"
+
+[settings]
+user_agent = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+rate_delay = 2
+max_results_per_query = 25
+max_comments_to_fetch = 15
+min_comments_for_fetch = 5
+max_seen_ids = 5000

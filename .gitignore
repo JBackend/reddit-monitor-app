@@ -1,0 +1,26 @@
+# OS
+.DS_Store
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# Claude Flow
+.claude/
+.claude-flow/
+.swarm/
+.mcp.json
+CLAUDE.md
+
+# Environment
+.env
+.venv/
+
+# Scratch data from one-shot scraper
+data/reddit_raw_data.json
+data/reddit_summary.txt
+.vercel
