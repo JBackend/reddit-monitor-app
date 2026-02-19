@@ -465,7 +465,7 @@ def run_pipeline(body):
         "report": report,
         "stats": {
             "posts_found": total_found,
-            "posts_analyzed": min(len(analyzed_posts), TOP_POSTS_FOR_COMMENTS),
+            "posts_analyzed": len(analyzed_posts),
             "cost_estimate": cost_estimate,
         },
     }, 200
