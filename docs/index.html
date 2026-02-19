@@ -9,7 +9,6 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js"></script>
     <style>
         /* ── Page-specific styles ── */
 
@@ -528,14 +527,6 @@
                 <button class="btn btn-primary" onclick="downloadPDF()">Download PDF</button>
             </div>
             <div id="report-content"></div>
-            <div id="download-nudge" style="display:none; text-align:center; margin-top:2rem; padding:1.5rem; background:var(--bg-raised); border:1px solid var(--border); border-radius:12px;">
-                <p style="font-size:0.95rem; color:var(--text); margin-bottom:0.75rem;">If this report helped your business, consider supporting the project.</p>
-                <div class="support-box">
-                    <span>E-TRANSFER</span>
-                    <strong>justbedi7@gmail.com</strong>
-                </div>
-                <p style="font-size:0.8rem; color:var(--text-muted); margin-top:0.5rem;">~$2.50 per report covers the AI cost. Most people send $10 for a month.</p>
-            </div>
         </section>
     </main>
 
@@ -732,8 +723,8 @@
         return html;
     }
 
-    // ── Download PDF ──
-    async function downloadPDF() {
+    // ── Download PDF (opens print dialog — Save as PDF on macOS) ──
+    function downloadPDF() {
         const md = localStorage.getItem('rm_report');
         if (!md) return;
 
@@ -741,85 +732,77 @@
         const savedForm = JSON.parse(localStorage.getItem('rm_form') || '{}');
         const savedStats = JSON.parse(localStorage.getItem('rm_stats') || '{}');
         const brandName = savedForm.brand || document.getElementById('brand-name').value.trim() || 'Brand';
-        const aliases = (savedForm.aliases || []).filter(Boolean);
-        const competitors = (savedForm.competitors || []).filter(Boolean);
-        const keywords = (savedForm.keywords || []).filter(Boolean);
-        const subreddits = (savedForm.subreddits || []).filter(Boolean);
+        const aliasList = (savedForm.aliases || []).filter(Boolean);
+        const competitorList = (savedForm.competitors || []).filter(Boolean);
+        const keywordList = (savedForm.keywords || []).filter(Boolean);
+        const subredditList = (savedForm.subreddits || []).filter(Boolean);
         const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
-        // Build cover header
-        let headerHTML = '<div style="border-bottom:2px solid #111;padding-bottom:14px;margin-bottom:16px;">';
-        headerHTML += `<h1 style="font-size:22px;font-weight:700;color:#111;margin:0 0 4px;">Brand Intelligence Report: ${inl(brandName)}</h1>`;
-        headerHTML += `<p style="font-size:10px;color:#666;margin:0 0 12px;">Generated ${today} by Reddit Monitor</p>`;
-        headerHTML += '<table style="border-collapse:collapse;width:100%;font-size:10px;margin-top:8px;">';
-        const rows = [];
-        if (aliases.length) rows.push(['Aliases', aliases.join(', ')]);
-        if (competitors.length) rows.push(['Competitors', competitors.join(', ')]);
-        if (keywords.length) rows.push(['Keywords', keywords.join(', ')]);
-        if (subreddits.length) rows.push(['Subreddits', subreddits.map(s => 'r/' + s).join(', ')]);
-        if (savedStats.posts_found) rows.push(['Data', `${savedStats.posts_found} posts found, ${savedStats.posts_analyzed || 0} analyzed`]);
-        rows.forEach(([label, value]) => {
-            headerHTML += `<tr><td style="padding:3px 8px 3px 0;font-weight:600;color:#333;white-space:nowrap;vertical-align:top;">${label}</td><td style="padding:3px 0;color:#555;">${inl(value)}</td></tr>`;
-        });
-        headerHTML += '</table></div>';
+        // Build metadata rows
+        const metaRows = [];
+        if (aliasList.length) metaRows.push(['Aliases', aliasList.join(', ')]);
+        if (competitorList.length) metaRows.push(['Competitors', competitorList.join(', ')]);
+        if (keywordList.length) metaRows.push(['Keywords', keywordList.join(', ')]);
+        if (subredditList.length) metaRows.push(['Subreddits', subredditList.map(s => 'r/' + s).join(', ')]);
+        if (savedStats.posts_found) metaRows.push(['Data', savedStats.posts_found + ' posts found, ' + (savedStats.posts_analyzed || 0) + ' analyzed']);
+        const metaHTML = metaRows.map(([l, v]) => '<tr><td style="padding:3px 8px 3px 0;font-weight:600;color:#333;white-space:nowrap;vertical-align:top;">' + l + '</td><td style="padding:3px 0;color:#555;">' + v + '</td></tr>').join('');
 
-        // Build clean HTML from markdown source — no accordions, no dark theme
-        const wrapper = document.createElement('div');
-        wrapper.style.cssText = 'position:fixed;top:0;left:0;width:190mm;background:#fff;color:#1a1a1a;padding:10mm;font-family:Inter,Helvetica,Arial,sans-serif;font-size:11px;line-height:1.55;z-index:99999;';
-        wrapper.innerHTML = headerHTML + renderPDFHTML(md);
+        // Render report body from markdown
+        const bodyHTML = renderPDFHTML(md);
 
-        // Hide duplicate report title (already in header)
-        wrapper.querySelectorAll('.report-title').forEach(h1 => h1.style.display = 'none');
-        // Style tables
-        wrapper.querySelectorAll('.table-wrap').forEach(tw => {
-            tw.style.cssText = 'overflow:visible;margin:8px 0;';
-        });
-        wrapper.querySelectorAll('table').forEach(t => {
-            t.style.cssText = 'border-collapse:collapse;width:100%;font-size:10px;';
-        });
-        wrapper.querySelectorAll('th').forEach(th => {
-            th.style.cssText = 'border:1px solid #d0d0d0;padding:5px 7px;text-align:left;background:#f5f5f5;font-weight:600;color:#222;';
-        });
-        wrapper.querySelectorAll('td').forEach(td => {
-            td.style.cssText = 'border:1px solid #d0d0d0;padding:5px 7px;text-align:left;color:#333;vertical-align:top;';
-        });
-        // Style text elements
-        wrapper.querySelectorAll('p').forEach(p => {
-            p.style.cssText = 'margin:4px 0;color:#1a1a1a;';
-        });
-        wrapper.querySelectorAll('h3').forEach(h3 => {
-            h3.style.cssText = 'font-size:12px;font-weight:600;color:#222;margin:10px 0 4px;';
-        });
-        wrapper.querySelectorAll('ul').forEach(ul => {
-            ul.style.cssText = 'margin:4px 0 4px 18px;';
-        });
-        wrapper.querySelectorAll('li').forEach(li => {
-            li.style.cssText = 'margin:2px 0;color:#1a1a1a;';
-        });
-        wrapper.querySelectorAll('strong').forEach(el => el.style.color = '#111');
-        wrapper.querySelectorAll('blockquote').forEach(bq => {
-            bq.style.cssText = 'border-left:3px solid #d0d0d0;padding-left:10px;margin:6px 0;color:#444;font-style:italic;';
-        });
-        wrapper.querySelectorAll('hr').forEach(hr => {
-            hr.style.cssText = 'border:none;border-top:1px solid #e5e5e5;margin:12px 0;';
-        });
+        // Open print window with clean, styled report
+        const printWin = window.open('', '_blank', 'width=900,height=700');
+        if (!printWin) { alert('Please allow pop-ups to download the PDF.'); return; }
 
-        document.body.appendChild(wrapper);
+        printWin.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Brand Intelligence Report: ' + brandName + '</title>');
+        printWin.document.write('<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">');
+        printWin.document.write('<style>');
+        printWin.document.write('* { margin: 0; padding: 0; box-sizing: border-box; }');
+        printWin.document.write('body { font-family: Inter, -apple-system, Helvetica, Arial, sans-serif; font-size: 12px; line-height: 1.6; color: #1a1a1a; max-width: 720px; margin: 0 auto; padding: 24px; }');
+        printWin.document.write('.report-title { display: none; }');
+        printWin.document.write('.header { border-bottom: 2px solid #111; padding-bottom: 14px; margin-bottom: 20px; }');
+        printWin.document.write('.header h1 { font-size: 20px; font-weight: 700; color: #111; margin-bottom: 2px; }');
+        printWin.document.write('.header .date { font-size: 10px; color: #888; margin-bottom: 10px; }');
+        printWin.document.write('.header table { font-size: 11px; border-collapse: collapse; }');
+        printWin.document.write('h2 { font-size: 14px; font-weight: 700; color: #111; border-bottom: 2px solid #e0e0e0; padding-bottom: 4px; margin: 22px 0 10px; }');
+        printWin.document.write('h3 { font-size: 12px; font-weight: 600; color: #222; margin: 14px 0 6px; }');
+        printWin.document.write('p { margin: 5px 0; }');
+        printWin.document.write('table { border-collapse: collapse; width: 100%; margin: 8px 0; font-size: 11px; }');
+        printWin.document.write('th { border: 1px solid #ccc; padding: 6px 8px; text-align: left; background: #f5f5f5; font-weight: 600; color: #222; }');
+        printWin.document.write('td { border: 1px solid #ccc; padding: 6px 8px; text-align: left; color: #333; vertical-align: top; }');
+        printWin.document.write('.table-wrap { overflow: visible; }');
+        printWin.document.write('ul { margin: 5px 0 5px 20px; }');
+        printWin.document.write('li { margin: 3px 0; }');
+        printWin.document.write('blockquote { border-left: 3px solid #ccc; padding-left: 12px; margin: 8px 0; color: #555; font-style: italic; }');
+        printWin.document.write('hr { border: none; border-top: 1px solid #e0e0e0; margin: 14px 0; }');
+        printWin.document.write('.meta { font-size: 10px; color: #888; }');
+        printWin.document.write('.footer { margin-top: 30px; padding-top: 14px; border-top: 1px solid #e0e0e0; text-align: center; font-size: 10px; color: #999; }');
+        printWin.document.write('@media print { body { padding: 0; max-width: none; } .no-print { display: none; } }');
+        printWin.document.write('</style></head><body>');
 
-        await html2pdf().set({
-            margin: [8, 8, 8, 8],
-            filename: `${brandName}-intelligence-report.pdf`,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { scale: 2, backgroundColor: '#ffffff', useCORS: true },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-            pagebreak: { mode: ['css', 'legacy'] }
-        }).from(wrapper).save();
+        // Header
+        printWin.document.write('<div class="header">');
+        printWin.document.write('<h1>Brand Intelligence Report: ' + brandName + '</h1>');
+        printWin.document.write('<p class="date">Generated ' + today + ' by Reddit Monitor</p>');
+        if (metaHTML) printWin.document.write('<table>' + metaHTML + '</table>');
+        printWin.document.write('</div>');
 
-        document.body.removeChild(wrapper);
+        // Report body
+        printWin.document.write(bodyHTML);
 
-        // Show payment nudge
-        document.getElementById('download-nudge').style.display = 'block';
-        document.getElementById('download-nudge').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Footer
+        printWin.document.write('<div class="footer">Generated by Reddit Monitor &mdash; redditmonitor.jaskaranbedi.com</div>');
+
+        // Auto-print
+        printWin.document.write('<script>window.onload = function() { setTimeout(function() { window.print(); }, 300); }<\/script>');
+        printWin.document.write('</body></html>');
+        printWin.document.close();
+
+        // After printing, scroll to the support section on the main page
+        setTimeout(() => {
+            const valueBlock = document.querySelector('.value-block');
+            if (valueBlock) valueBlock.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 1000);
     }
 
     // ── Report renderer ──
