@@ -708,51 +708,88 @@
         }
     }
 
+    // ── Render markdown to clean PDF HTML (no accordions) ──
+    function renderPDFHTML(md) {
+        const lines = md.split('\n');
+        const sections = [];
+        let current = null, headerLines = [];
+        for (const line of lines) {
+            if (line.startsWith('## ')) {
+                if (current) sections.push(current);
+                current = { title: line.slice(3).trim(), lines: [] };
+            } else if (current) { current.lines.push(line); }
+            else { headerLines.push(line); }
+        }
+        if (current) sections.push(current);
+
+        let html = renderBlock(headerLines);
+        sections.forEach(s => {
+            html += '<div style="margin-top:1.2em;">';
+            html += '<h2 style="font-size:14px;font-weight:700;color:#111;border-bottom:2px solid #e5e5e5;padding-bottom:4px;margin-bottom:8px;">' + inl(s.title) + '</h2>';
+            html += renderBlock(s.lines);
+            html += '</div>';
+        });
+        return html;
+    }
+
     // ── Download PDF ──
     async function downloadPDF() {
-        const content = document.getElementById('report-content');
-        if (!content.innerHTML) return;
+        const md = localStorage.getItem('rm_report');
+        if (!md) return;
 
-        // Open all accordions so full report appears in PDF
-        content.querySelectorAll('.accordion').forEach(a => a.classList.add('open'));
-
-        // Clone content into a light-themed wrapper for clean PDF
+        // Build clean HTML from markdown source — no accordions, no dark theme
         const wrapper = document.createElement('div');
-        wrapper.style.cssText = 'background:#fff;color:#1a1a1a;padding:2rem;font-family:Inter,sans-serif;font-size:14px;line-height:1.6;';
-        wrapper.innerHTML = content.innerHTML;
+        wrapper.style.cssText = 'position:fixed;top:0;left:0;width:190mm;background:#fff;color:#1a1a1a;padding:10mm;font-family:Inter,Helvetica,Arial,sans-serif;font-size:11px;line-height:1.55;z-index:99999;';
+        wrapper.innerHTML = renderPDFHTML(md);
 
-        // Style tables for print
-        wrapper.querySelectorAll('.table-wrap').forEach(tw => tw.style.overflow = 'visible');
-        wrapper.querySelectorAll('table').forEach(t => {
-            t.style.cssText = 'border-collapse:collapse;width:100%;margin:0.75rem 0;font-size:12px;';
+        // Style report title
+        wrapper.querySelectorAll('.report-title').forEach(h1 => {
+            h1.style.cssText = 'font-size:20px;font-weight:700;color:#111;margin-bottom:0.5em;';
         });
-        wrapper.querySelectorAll('th,td').forEach(cell => {
-            cell.style.cssText = 'border:1px solid #ddd;padding:6px 8px;text-align:left;color:#1a1a1a;';
+        // Style tables
+        wrapper.querySelectorAll('.table-wrap').forEach(tw => {
+            tw.style.cssText = 'overflow:visible;margin:8px 0;';
+        });
+        wrapper.querySelectorAll('table').forEach(t => {
+            t.style.cssText = 'border-collapse:collapse;width:100%;font-size:10px;';
         });
         wrapper.querySelectorAll('th').forEach(th => {
-            th.style.cssText += 'background:#f5f5f5;font-weight:600;';
+            th.style.cssText = 'border:1px solid #d0d0d0;padding:5px 7px;text-align:left;background:#f5f5f5;font-weight:600;color:#222;';
         });
-        wrapper.querySelectorAll('h1,h2,h3,strong').forEach(el => el.style.color = '#111');
-        wrapper.querySelectorAll('p,li,span').forEach(el => el.style.color = '#1a1a1a');
-        wrapper.querySelectorAll('.accordion-header').forEach(h => {
-            h.style.cssText = 'background:none;border:none;padding:0.5rem 0;display:flex;align-items:center;gap:0.5rem;';
+        wrapper.querySelectorAll('td').forEach(td => {
+            td.style.cssText = 'border:1px solid #d0d0d0;padding:5px 7px;text-align:left;color:#333;vertical-align:top;';
         });
-        wrapper.querySelectorAll('.accordion-chevron').forEach(c => c.style.display = 'none');
-        wrapper.querySelectorAll('.accordion-body').forEach(b => b.style.cssText = 'display:block;padding:0 0 1rem;');
-        wrapper.querySelectorAll('.section-number').forEach(n => {
-            n.style.cssText = 'background:#f0f0f0;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#333;flex-shrink:0;';
+        // Style text elements
+        wrapper.querySelectorAll('p').forEach(p => {
+            p.style.cssText = 'margin:4px 0;color:#1a1a1a;';
+        });
+        wrapper.querySelectorAll('h3').forEach(h3 => {
+            h3.style.cssText = 'font-size:12px;font-weight:600;color:#222;margin:10px 0 4px;';
+        });
+        wrapper.querySelectorAll('ul').forEach(ul => {
+            ul.style.cssText = 'margin:4px 0 4px 18px;';
+        });
+        wrapper.querySelectorAll('li').forEach(li => {
+            li.style.cssText = 'margin:2px 0;color:#1a1a1a;';
+        });
+        wrapper.querySelectorAll('strong').forEach(el => el.style.color = '#111');
+        wrapper.querySelectorAll('blockquote').forEach(bq => {
+            bq.style.cssText = 'border-left:3px solid #d0d0d0;padding-left:10px;margin:6px 0;color:#444;font-style:italic;';
+        });
+        wrapper.querySelectorAll('hr').forEach(hr => {
+            hr.style.cssText = 'border:none;border-top:1px solid #e5e5e5;margin:12px 0;';
         });
 
         document.body.appendChild(wrapper);
 
         const brandName = document.getElementById('brand-name').value.trim() || 'brand';
         await html2pdf().set({
-            margin: [10, 10, 10, 10],
+            margin: [8, 8, 8, 8],
             filename: `${brandName}-intelligence-report.pdf`,
             image: { type: 'jpeg', quality: 0.98 },
             html2canvas: { scale: 2, backgroundColor: '#ffffff', useCORS: true },
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+            pagebreak: { mode: ['css', 'legacy'] }
         }).from(wrapper).save();
 
         document.body.removeChild(wrapper);
