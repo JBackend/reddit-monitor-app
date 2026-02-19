@@ -9,7 +9,6 @@ Standalone function — no external package imports.
 
 import json
 import os
-import time
 import urllib.request
 import urllib.parse
 import urllib.error
@@ -106,7 +105,6 @@ def search_reddit(queries, subreddits):
                 "size": MAX_SEARCH_RESULTS,
                 "sort_type": "score",
                 "sort": "desc",
-                "after": str(int(time.time()) - 30 * 86400),
             })
             posts = result.get("data", [])
             for post in posts:
@@ -125,7 +123,6 @@ def search_reddit(queries, subreddits):
                     "size": MAX_SEARCH_RESULTS,
                     "sort_type": "score",
                     "sort": "desc",
-                    "after": str(int(time.time()) - 30 * 86400),
                 })
                 posts = result.get("data", [])
                 for post in posts:
