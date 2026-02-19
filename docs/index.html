@@ -9,6 +9,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.2/html2pdf.bundle.min.js"></script>
     <style>
         /* ── Page-specific styles ── */
 
@@ -524,10 +525,17 @@
             </div>
             <p id="report-stats"></p>
             <div id="report-actions">
-                <button class="btn btn-primary" onclick="downloadReport()">Download Markdown</button>
-                <a href="#form" class="btn btn-done">Run Again</a>
+                <button class="btn btn-primary" onclick="downloadPDF()">Download PDF</button>
             </div>
             <div id="report-content"></div>
+            <div id="download-nudge" style="display:none; text-align:center; margin-top:2rem; padding:1.5rem; background:var(--bg-raised); border:1px solid var(--border); border-radius:12px;">
+                <p style="font-size:0.95rem; color:var(--text); margin-bottom:0.75rem;">If this report helped your business, consider supporting the project.</p>
+                <div class="support-box">
+                    <span>E-TRANSFER</span>
+                    <strong>justbedi7@gmail.com</strong>
+                </div>
+                <p style="font-size:0.8rem; color:var(--text-muted); margin-top:0.5rem;">~$2.50 per report covers the AI cost. Most people send $10 for a month.</p>
+            </div>
         </section>
     </main>
 
@@ -696,21 +704,62 @@
         // Show stats
         if (stats) {
             document.getElementById('report-stats').textContent =
-                `${stats.posts_found || 0} posts found \u00b7 ${stats.posts_analyzed || 0} analyzed \u00b7 ~$${(stats.cost_estimate || 0).toFixed(2)} AI cost`;
+                `${stats.posts_found || 0} posts found \u00b7 ${stats.posts_analyzed || 0} analyzed`;
         }
     }
 
-    // ── Download markdown ──
-    function downloadReport() {
-        const report = localStorage.getItem('rm_report');
-        if (!report) return;
-        const blob = new Blob([report], { type: 'text/markdown' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'brand-intelligence-report.md';
-        a.click();
-        URL.revokeObjectURL(url);
+    // ── Download PDF ──
+    async function downloadPDF() {
+        const content = document.getElementById('report-content');
+        if (!content.innerHTML) return;
+
+        // Open all accordions so full report appears in PDF
+        content.querySelectorAll('.accordion').forEach(a => a.classList.add('open'));
+
+        // Clone content into a light-themed wrapper for clean PDF
+        const wrapper = document.createElement('div');
+        wrapper.style.cssText = 'background:#fff;color:#1a1a1a;padding:2rem;font-family:Inter,sans-serif;font-size:14px;line-height:1.6;';
+        wrapper.innerHTML = content.innerHTML;
+
+        // Style tables for print
+        wrapper.querySelectorAll('.table-wrap').forEach(tw => tw.style.overflow = 'visible');
+        wrapper.querySelectorAll('table').forEach(t => {
+            t.style.cssText = 'border-collapse:collapse;width:100%;margin:0.75rem 0;font-size:12px;';
+        });
+        wrapper.querySelectorAll('th,td').forEach(cell => {
+            cell.style.cssText = 'border:1px solid #ddd;padding:6px 8px;text-align:left;color:#1a1a1a;';
+        });
+        wrapper.querySelectorAll('th').forEach(th => {
+            th.style.cssText += 'background:#f5f5f5;font-weight:600;';
+        });
+        wrapper.querySelectorAll('h1,h2,h3,strong').forEach(el => el.style.color = '#111');
+        wrapper.querySelectorAll('p,li,span').forEach(el => el.style.color = '#1a1a1a');
+        wrapper.querySelectorAll('.accordion-header').forEach(h => {
+            h.style.cssText = 'background:none;border:none;padding:0.5rem 0;display:flex;align-items:center;gap:0.5rem;';
+        });
+        wrapper.querySelectorAll('.accordion-chevron').forEach(c => c.style.display = 'none');
+        wrapper.querySelectorAll('.accordion-body').forEach(b => b.style.cssText = 'display:block;padding:0 0 1rem;');
+        wrapper.querySelectorAll('.section-number').forEach(n => {
+            n.style.cssText = 'background:#f0f0f0;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:#333;flex-shrink:0;';
+        });
+
+        document.body.appendChild(wrapper);
+
+        const brandName = document.getElementById('brand-name').value.trim() || 'brand';
+        await html2pdf().set({
+            margin: [10, 10, 10, 10],
+            filename: `${brandName}-intelligence-report.pdf`,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { scale: 2, backgroundColor: '#ffffff', useCORS: true },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+            pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+        }).from(wrapper).save();
+
+        document.body.removeChild(wrapper);
+
+        // Show payment nudge
+        document.getElementById('download-nudge').style.display = 'block';
+        document.getElementById('download-nudge').scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
 
     // ── Report renderer ──
