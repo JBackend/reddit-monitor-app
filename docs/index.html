@@ -806,7 +806,6 @@
 
         document.body.appendChild(wrapper);
 
-        const brandName = document.getElementById('brand-name').value.trim() || 'brand';
         await html2pdf().set({
             margin: [8, 8, 8, 8],
             filename: `${brandName}-intelligence-report.pdf`,
