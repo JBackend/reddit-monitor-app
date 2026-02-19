@@ -471,26 +471,26 @@
             <div class="form-fields">
                 <div class="form-group">
                     <label for="brand-name">Brand name</label>
-                    <input type="text" id="brand-name" placeholder="e.g. Rise People" required>
+                    <input type="text" id="brand-name" placeholder="e.g. Linear" required>
                 </div>
                 <div class="form-group">
                     <label for="aliases">Aliases</label>
-                    <textarea id="aliases" rows="3" placeholder="rise people&#10;risepeople.com&#10;rise hr"></textarea>
+                    <textarea id="aliases" rows="3" placeholder="linear&#10;linear.app&#10;linear issue tracker"></textarea>
                     <p class="form-hint">One per line — lowercase variations, domains, abbreviations</p>
                 </div>
                 <div class="form-group">
                     <label for="competitors">Competitors</label>
-                    <textarea id="competitors" rows="3" placeholder="humi&#10;payworks&#10;gusto"></textarea>
+                    <textarea id="competitors" rows="3" placeholder="jira&#10;asana&#10;shortcut"></textarea>
                     <p class="form-hint">One per line</p>
                 </div>
                 <div class="form-group">
                     <label for="keywords">Industry keywords</label>
-                    <textarea id="keywords" rows="3" placeholder="payroll&#10;hr software&#10;hris"></textarea>
+                    <textarea id="keywords" rows="3" placeholder="project management&#10;issue tracker&#10;dev tools"></textarea>
                     <p class="form-hint">One per line</p>
                 </div>
                 <div class="form-group">
                     <label for="subreddits">Subreddits</label>
-                    <textarea id="subreddits" rows="3" placeholder="humanresources&#10;payroll&#10;smallbusiness"></textarea>
+                    <textarea id="subreddits" rows="3" placeholder="programming&#10;devops&#10;startups"></textarea>
                     <p class="form-hint">One per line, without r/</p>
                 </div>
                 <div class="form-actions">
@@ -645,7 +645,7 @@
         startProgressAnimation();
 
         try {
-            const resp = await fetch('/api/analyze', {
+            const resp = await fetch('https://redditmonitor-api.fly.dev/analyze', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(body),
@@ -661,8 +661,10 @@
             // Save report + timestamp
             localStorage.setItem('rm_report', data.report);
             localStorage.setItem('rm_stats', JSON.stringify(data.stats));
-            runs.push(new Date().toISOString());
-            localStorage.setItem('rm_runs', JSON.stringify(runs));
+            if (!data.cached) {
+                runs.push(new Date().toISOString());
+                localStorage.setItem('rm_runs', JSON.stringify(runs));
+            }
 
             // Render report
             renderFullReport(data.report, data.stats);
@@ -805,6 +807,9 @@
             document.getElementById('subreddits').value = (f.subreddits || []).join('\n');
         } catch (e) {}
     }
+
+    // ── Pre-warm API server (Render spins down after inactivity) ──
+    fetch('https://redditmonitor-api.fly.dev/health').catch(() => {});
 
     // ── On page load: restore last report ──
     const savedReport = localStorage.getItem('rm_report');

@@ -7,8 +7,11 @@ analyzes with Claude AI, and returns a structured intelligence report.
 Standalone function — no external package imports.
 """
 
+import hashlib
 import json
 import os
+import threading
+import time
 import urllib.request
 import urllib.parse
 import urllib.error
@@ -23,7 +26,7 @@ CLAUDE_API_URL = "https://api.anthropic.com/v1/messages"
 CLAUDE_MODEL = "claude-sonnet-4-20250514"
 CLAUDE_MAX_TOKENS = 8000
 ANTHROPIC_VERSION = "2023-06-01"
-TOP_POSTS_FOR_COMMENTS = 5
+TOP_POSTS_FOR_COMMENTS = 3
 MAX_SEARCH_RESULTS = 25
 
 CORS_HEADERS = {
@@ -34,26 +37,100 @@ CORS_HEADERS = {
 }
 
 # ---------------------------------------------------------------------------
+# In-memory cache (persists across requests on Render)
+# ---------------------------------------------------------------------------
+
+_cache = {}
+_cache_lock = threading.Lock()
+CACHE_TTL = 3600  # 1 hour
+
+
+def _cache_key(body):
+    """Generate a deterministic cache key from request body."""
+    normalized = {
+        "brand": (body.get("brand") or "").strip().lower(),
+        "aliases": sorted(a.strip().lower() for a in (body.get("aliases") or [])),
+        "competitors": sorted(c.strip().lower() for c in (body.get("competitors") or [])),
+        "keywords": sorted(k.strip().lower() for k in (body.get("keywords") or [])),
+        "subreddits": sorted(s.strip().lower() for s in (body.get("subreddits") or [])),
+    }
+    raw = json.dumps(normalized, sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(raw.encode()).hexdigest()
+
+
+def _cache_get(key):
+    with _cache_lock:
+        entry = _cache.get(key)
+        if entry and time.time() - entry["ts"] < CACHE_TTL:
+            return entry["value"]
+        if entry:
+            del _cache[key]
+        return None
+
+
+def _cache_set(key, value):
+    with _cache_lock:
+        if len(_cache) > 500:
+            now = time.time()
+            expired = [k for k, v in _cache.items() if now - v["ts"] >= CACHE_TTL]
+            for k in expired:
+                del _cache[k]
+        _cache[key] = {"value": value, "ts": time.time()}
+
+
+# ---------------------------------------------------------------------------
+# Rate limiting (per IP, in-memory)
+# ---------------------------------------------------------------------------
+
+_rate = {}
+_rate_lock = threading.Lock()
+RATE_LIMIT = 10  # requests per window
+RATE_WINDOW = 3600  # 1 hour
+
+
+def _check_rate_limit(client_ip):
+    """Returns True if request is allowed, False if rate-limited."""
+    if not client_ip:
+        return True
+    ip_hash = hashlib.sha256(client_ip.encode()).hexdigest()[:16]
+    now = time.time()
+    with _rate_lock:
+        entry = _rate.get(ip_hash, {"count": 0, "window_start": now})
+        if now - entry["window_start"] >= RATE_WINDOW:
+            entry = {"count": 0, "window_start": now}
+        entry["count"] += 1
+        _rate[ip_hash] = entry
+        return entry["count"] <= RATE_LIMIT
+
+
+# ---------------------------------------------------------------------------
 # PullPush.io helpers
 # ---------------------------------------------------------------------------
 
 
 def _pullpush_get(endpoint, params):
-    """GET request to PullPush.io API. Returns parsed JSON or raises."""
+    """GET request to PullPush.io API with retry. Returns parsed JSON or raises."""
     query = urllib.parse.urlencode(params)
     url = f"{PULLPUSH_BASE}{endpoint}?{query}"
-    req = urllib.request.Request(url, headers={
-        "User-Agent": "RedditMonitor/1.0",
-        "Accept": "application/json",
-    })
-    try:
-        with urllib.request.urlopen(req, timeout=15) as resp:
-            return json.loads(resp.read().decode("utf-8"))
-    except urllib.error.HTTPError as exc:
-        body = exc.read().decode("utf-8", errors="replace") if exc.fp else ""
-        raise RuntimeError(f"PullPush {endpoint} failed (HTTP {exc.code}): {body[:300]}")
-    except urllib.error.URLError as exc:
-        raise RuntimeError(f"PullPush request failed: {exc.reason}")
+    last_err = None
+    for attempt in range(3):
+        req = urllib.request.Request(url, headers={
+            "User-Agent": "RedditMonitor/1.0",
+            "Accept": "application/json",
+        })
+        try:
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                return json.loads(resp.read().decode("utf-8"))
+        except urllib.error.HTTPError as exc:
+            body = exc.read().decode("utf-8", errors="replace") if exc.fp else ""
+            if exc.code in (400, 404):
+                raise RuntimeError(f"PullPush {endpoint} failed (HTTP {exc.code}): {body[:300]}")
+            last_err = RuntimeError(f"PullPush {endpoint} failed (HTTP {exc.code}): {body[:300]}")
+        except urllib.error.URLError as exc:
+            last_err = RuntimeError(f"PullPush request failed: {exc.reason}")
+        if attempt < 2:
+            time.sleep(2 ** attempt)  # 1s, then 2s
+    raise last_err
 
 
 # ---------------------------------------------------------------------------
@@ -115,7 +192,7 @@ def search_reddit(queries, subreddits):
 
     # If subreddits given, search each one with the primary query
     if subreddits and queries:
-        for sr in subreddits[:3]:
+        for sr in subreddits[:2]:
             try:
                 result = _pullpush_get("/reddit/search/submission/", {
                     "q": queries[0],
@@ -353,7 +430,7 @@ def call_claude_api(prompt, api_key):
     )
 
     try:
-        with urllib.request.urlopen(req, timeout=120) as resp:
+        with urllib.request.urlopen(req, timeout=90) as resp:
             result = json.loads(resp.read().decode("utf-8"))
             content_blocks = result.get("content", [])
             text_parts = []
@@ -380,8 +457,12 @@ def call_claude_api(prompt, api_key):
 # ---------------------------------------------------------------------------
 
 
-def run_pipeline(body):
+def run_pipeline(body, client_ip=None):
     """Execute the full scrape-analyze pipeline. Returns (result_dict, status_code)."""
+
+    # --- 0. Rate limit check ---
+    if client_ip and not _check_rate_limit(client_ip):
+        return {"error": "Rate limit exceeded. Try again in an hour."}, 429
 
     # --- 1. Validate input ---
     brand = (body.get("brand") or "").strip()
@@ -398,6 +479,16 @@ def run_pipeline(body):
         return {
             "error": "At least one of 'aliases', 'competitors', 'keywords', or 'subreddits' must be provided."
         }, 400
+
+    # --- 1b. Cache check ---
+    cache_key = _cache_key(body)
+    cached = _cache_get(cache_key)
+    if cached:
+        cached["cached"] = True
+        print(f"[api] brand={brand} cached=True")
+        return cached, 200
+
+    start_time = time.time()
 
     api_key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
     if not api_key:
@@ -461,14 +552,21 @@ def run_pipeline(body):
         return {"error": f"Claude API error: {str(exc)}"}, 502
 
     # --- 10. Return report ---
-    return {
+    result = {
         "report": report,
+        "cached": False,
         "stats": {
             "posts_found": total_found,
             "posts_analyzed": len(analyzed_posts),
             "cost_estimate": cost_estimate,
         },
-    }, 200
+    }
+    _cache_set(cache_key, result)
+
+    elapsed = time.time() - start_time
+    print(f"[api] brand={brand} posts={total_found} cached=False duration={elapsed:.1f}s")
+
+    return result, 200
 
 
 # ---------------------------------------------------------------------------

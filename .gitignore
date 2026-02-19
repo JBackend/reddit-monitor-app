@@ -24,3 +24,6 @@ CLAUDE.md
 data/reddit_raw_data.json
 data/reddit_summary.txt
 .vercel
+
+# Legacy monitoring module (not part of web app)
+reddit_monitor/
