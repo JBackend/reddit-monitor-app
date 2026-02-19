@@ -737,15 +737,39 @@
         const md = localStorage.getItem('rm_report');
         if (!md) return;
 
+        // Gather input context for the header
+        const savedForm = JSON.parse(localStorage.getItem('rm_form') || '{}');
+        const savedStats = JSON.parse(localStorage.getItem('rm_stats') || '{}');
+        const brandName = savedForm.brand || document.getElementById('brand-name').value.trim() || 'Brand';
+        const aliases = (savedForm.aliases || []).filter(Boolean);
+        const competitors = (savedForm.competitors || []).filter(Boolean);
+        const keywords = (savedForm.keywords || []).filter(Boolean);
+        const subreddits = (savedForm.subreddits || []).filter(Boolean);
+        const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+        // Build cover header
+        let headerHTML = '<div style="border-bottom:2px solid #111;padding-bottom:14px;margin-bottom:16px;">';
+        headerHTML += `<h1 style="font-size:22px;font-weight:700;color:#111;margin:0 0 4px;">Brand Intelligence Report: ${inl(brandName)}</h1>`;
+        headerHTML += `<p style="font-size:10px;color:#666;margin:0 0 12px;">Generated ${today} by Reddit Monitor</p>`;
+        headerHTML += '<table style="border-collapse:collapse;width:100%;font-size:10px;margin-top:8px;">';
+        const rows = [];
+        if (aliases.length) rows.push(['Aliases', aliases.join(', ')]);
+        if (competitors.length) rows.push(['Competitors', competitors.join(', ')]);
+        if (keywords.length) rows.push(['Keywords', keywords.join(', ')]);
+        if (subreddits.length) rows.push(['Subreddits', subreddits.map(s => 'r/' + s).join(', ')]);
+        if (savedStats.posts_found) rows.push(['Data', `${savedStats.posts_found} posts found, ${savedStats.posts_analyzed || 0} analyzed`]);
+        rows.forEach(([label, value]) => {
+            headerHTML += `<tr><td style="padding:3px 8px 3px 0;font-weight:600;color:#333;white-space:nowrap;vertical-align:top;">${label}</td><td style="padding:3px 0;color:#555;">${inl(value)}</td></tr>`;
+        });
+        headerHTML += '</table></div>';
+
         // Build clean HTML from markdown source — no accordions, no dark theme
         const wrapper = document.createElement('div');
         wrapper.style.cssText = 'position:fixed;top:0;left:0;width:190mm;background:#fff;color:#1a1a1a;padding:10mm;font-family:Inter,Helvetica,Arial,sans-serif;font-size:11px;line-height:1.55;z-index:99999;';
-        wrapper.innerHTML = renderPDFHTML(md);
+        wrapper.innerHTML = headerHTML + renderPDFHTML(md);
 
-        // Style report title
-        wrapper.querySelectorAll('.report-title').forEach(h1 => {
-            h1.style.cssText = 'font-size:20px;font-weight:700;color:#111;margin-bottom:0.5em;';
-        });
+        // Hide duplicate report title (already in header)
+        wrapper.querySelectorAll('.report-title').forEach(h1 => h1.style.display = 'none');
         // Style tables
         wrapper.querySelectorAll('.table-wrap').forEach(tw => {
             tw.style.cssText = 'overflow:visible;margin:8px 0;';
