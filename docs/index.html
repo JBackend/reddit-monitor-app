@@ -468,34 +468,55 @@
         <!-- ══════════════ SECTION 5: THE FORM ══════════════ -->
         <section id="form" class="form-section-wrap">
             <h2>Generate Your Report</h2>
-            <div class="form-fields">
+            <div class="form-fields monitor-form">
                 <div class="form-group">
-                    <label for="brand-name">Brand name</label>
+                    <label for="brand-name">Brand name <span class="required-star">*</span></label>
                     <input type="text" id="brand-name" placeholder="e.g. Linear" required>
+                    <div class="form-error" id="error-brand-name">Brand name is required to generate your report</div>
                 </div>
                 <div class="form-group">
-                    <label for="aliases">Aliases</label>
+                    <label for="industry">Industry <span class="required-star">*</span></label>
+                    <textarea id="industry" rows="3" placeholder="project management&#10;issue tracker&#10;dev tools" required></textarea>
+                    <div class="form-error" id="error-industry">Industry is required so we can find the right communities</div>
+                </div>
+                <div class="form-group">
+                    <label for="aliases">Aliases <span class="optional-tag">OPTIONAL</span></label>
                     <textarea id="aliases" rows="3" placeholder="linear&#10;linear.app&#10;linear issue tracker"></textarea>
-                    <p class="form-hint">One per line — lowercase variations, domains, abbreviations</p>
+                    <p class="form-hint">Leave blank and we'll figure it out, or fill in for more precise results</p>
                 </div>
                 <div class="form-group">
-                    <label for="competitors">Competitors</label>
+                    <label for="competitors">Competitors <span class="required-star">*</span></label>
                     <textarea id="competitors" rows="3" placeholder="jira&#10;asana&#10;shortcut"></textarea>
+                    <div class="form-error" id="error-competitors">At least one competitor is required for comparison analysis</div>
                     <p class="form-hint">One per line</p>
                 </div>
                 <div class="form-group">
-                    <label for="keywords">Industry keywords</label>
+                    <label for="keywords">Industry keywords <span class="optional-tag">OPTIONAL</span></label>
                     <textarea id="keywords" rows="3" placeholder="project management&#10;issue tracker&#10;dev tools"></textarea>
-                    <p class="form-hint">One per line</p>
+                    <p class="form-hint">Leave blank and we'll figure it out, or fill in for more precise results</p>
                 </div>
                 <div class="form-group">
-                    <label for="subreddits">Subreddits</label>
+                    <label for="subreddits">Subreddits <span class="optional-tag">OPTIONAL</span></label>
                     <textarea id="subreddits" rows="3" placeholder="programming&#10;devops&#10;startups"></textarea>
-                    <p class="form-hint">One per line, without r/</p>
+                    <p class="form-hint">Leave blank and we'll figure it out, or fill in for more precise results</p>
                 </div>
                 <div class="form-actions">
                     <button class="btn btn-generate" id="btn-generate">Generate Report</button>
                     <p class="form-limit">2 free runs per day</p>
+                </div>
+                <div class="tips-section" id="tips-section">
+                    <button type="button" class="tips-toggle" id="tips-toggle">
+                        <span class="tips-icon">?</span>
+                        <span class="tips-label">Tips for better results</span>
+                        <span class="tips-chevron"></span>
+                    </button>
+                    <div class="tips-body">
+                        <ul class="tips-list">
+                            <li>Be specific with your brand name — use the exact name customers would search for</li>
+                            <li>List your top 3-5 competitors for the most focused analysis</li>
+                            <li>Adding industry terms helps us find the right Reddit communities</li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </section>
@@ -608,6 +629,36 @@
         progressInterval = null;
     }
 
+    // ── Tips toggle ──
+    document.getElementById('tips-toggle').addEventListener('click', () => {
+        document.getElementById('tips-section').classList.toggle('open');
+    });
+
+    // ── Form validation helpers ──
+    function showFieldError(fieldId, errorId) {
+        const field = document.getElementById(fieldId);
+        const error = document.getElementById(errorId);
+        field.classList.add('input-error');
+        if (error) error.classList.add('visible');
+    }
+
+    function clearFieldError(fieldId, errorId) {
+        const field = document.getElementById(fieldId);
+        const error = document.getElementById(errorId);
+        field.classList.remove('input-error');
+        if (error) error.classList.remove('visible');
+    }
+
+    // Clear errors on input
+    ['brand-name', 'industry'].forEach(id => {
+        document.getElementById(id).addEventListener('input', () => {
+            clearFieldError(id, 'error-' + id);
+        });
+    });
+    document.getElementById('competitors').addEventListener('input', () => {
+        clearFieldError('competitors', 'error-competitors');
+    });
+
     // ── Form submission ──
     document.getElementById('btn-generate').addEventListener('click', async () => {
         // Check rate limit (2 per day from localStorage)
@@ -621,13 +672,48 @@
 
         // Collect form data
         const brand = document.getElementById('brand-name').value.trim();
-        if (!brand) { document.getElementById('brand-name').focus(); return; }
-
+        const industry = document.getElementById('industry').value.trim();
         const lines = v => v.split('\n').map(l => l.trim()).filter(Boolean);
+        const competitorLines = lines(document.getElementById('competitors').value);
+
+        // Validate required fields
+        let hasError = false;
+        let firstInvalid = null;
+
+        if (!brand) {
+            showFieldError('brand-name', 'error-brand-name');
+            if (!firstInvalid) firstInvalid = 'brand-name';
+            hasError = true;
+        } else {
+            clearFieldError('brand-name', 'error-brand-name');
+        }
+
+        if (!industry) {
+            showFieldError('industry', 'error-industry');
+            if (!firstInvalid) firstInvalid = 'industry';
+            hasError = true;
+        } else {
+            clearFieldError('industry', 'error-industry');
+        }
+
+        if (competitorLines.length === 0) {
+            showFieldError('competitors', 'error-competitors');
+            if (!firstInvalid) firstInvalid = 'competitors';
+            hasError = true;
+        } else {
+            clearFieldError('competitors', 'error-competitors');
+        }
+
+        if (hasError) {
+            document.getElementById(firstInvalid).focus();
+            return;
+        }
+
         const body = {
             brand: brand,
+            industry: lines(document.getElementById('industry').value),
             aliases: lines(document.getElementById('aliases').value),
-            competitors: lines(document.getElementById('competitors').value),
+            competitors: competitorLines,
             keywords: lines(document.getElementById('keywords').value),
             subreddits: lines(document.getElementById('subreddits').value),
         };
@@ -871,6 +957,11 @@
             if (ln.startsWith('> ')) { if (!inBQ) { html += '<blockquote>'; inBQ = true; } html += '<p>' + inl(ln.slice(2)) + '</p>'; continue; }
             if (/^\*[^*]+\*$/.test(ln.trim())) { html += '<p class="meta">' + inl(ln) + '</p>'; continue; }
             if (ln.trim() === '') continue;
+            // Detect date range / post count lines and wrap in pill
+            if (/\*\*Posts from:/.test(ln) || /\*\*No posts found\*\*/.test(ln) || /posts analyzed\*\*/.test(ln)) {
+                html += '<div class="report-date-range">' + inl(ln) + '</div>';
+                continue;
+            }
             html += '<p>' + inl(ln) + '</p>';
         }
         if (inList) html += '</ul>';
@@ -893,6 +984,7 @@
         try {
             const f = JSON.parse(savedForm);
             document.getElementById('brand-name').value = f.brand || '';
+            document.getElementById('industry').value = f.industry || '';
             document.getElementById('aliases').value = (f.aliases || []).join('\n');
             document.getElementById('competitors').value = (f.competitors || []).join('\n');
             document.getElementById('keywords').value = (f.keywords || []).join('\n');

@@ -341,6 +341,159 @@ section:last-of-type {
     margin-top: 0.75rem;
 }
 
+/* ── Required & Optional field indicators ────────── */
+.required-star {
+    color: #ef4444;
+    font-size: 1.05em;
+    font-weight: 700;
+    margin-left: 0.15em;
+}
+
+.optional-tag {
+    display: inline-block;
+    font-size: 0.6rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 0.1rem 0.4rem;
+    margin-left: 0.4rem;
+    vertical-align: middle;
+    line-height: 1.4;
+}
+
+/* ── Form validation errors ──────────────────────── */
+.form-error {
+    display: none;
+    font-size: 0.75rem;
+    color: #ef4444;
+    margin-top: 0.3rem;
+    line-height: 1.4;
+}
+
+.form-error.visible {
+    display: block;
+}
+
+.input-error {
+    border-color: #ef4444 !important;
+    background: rgba(239, 68, 68, 0.05) !important;
+}
+
+/* ── Collapsible tips section ────────────────────── */
+.tips-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.65rem 0.85rem;
+    cursor: pointer;
+    color: var(--text-secondary);
+    font-family: inherit;
+    font-size: 0.82rem;
+    font-weight: 500;
+    transition: border-color 0.2s, color 0.2s;
+    margin-top: 1rem;
+}
+
+.tips-toggle:hover {
+    border-color: #444;
+    color: var(--text);
+}
+
+.tips-icon {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 1.5px solid var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.tips-label {
+    flex: 1;
+    text-align: left;
+}
+
+.tips-chevron {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+    position: relative;
+}
+
+.tips-chevron::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 6px;
+    height: 6px;
+    border-right: 1.5px solid var(--text-muted);
+    border-bottom: 1.5px solid var(--text-muted);
+    transform: translate(-50%, -60%) rotate(45deg);
+    transition: transform 0.2s;
+}
+
+.tips-section.open .tips-chevron::before {
+    transform: translate(-50%, -40%) rotate(-135deg);
+}
+
+.tips-body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s ease;
+}
+
+.tips-section.open .tips-body {
+    max-height: 300px;
+}
+
+.tips-list {
+    list-style: none;
+    margin: 0.75rem 0 0 0;
+    padding: 0;
+}
+
+.tips-list li {
+    position: relative;
+    padding: 0.4rem 0 0.4rem 1.25rem;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    line-height: 1.55;
+}
+
+.tips-list li::before {
+    content: '\2022';
+    position: absolute;
+    left: 0.25rem;
+    color: var(--text-muted);
+    font-weight: 700;
+}
+
+/* ── Report date range pill ──────────────────────── */
+.report-date-range {
+    display: inline-block;
+    border: 1px solid var(--border);
+    background: var(--bg-raised);
+    border-radius: 6px;
+    padding: 0.25rem 0.65rem;
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    margin: 0.4rem 0;
+    line-height: 1.5;
+}
+
 /* ── Report (#report) ────────────────────────────── */
 #report {
     display: none;
@@ -845,7 +998,7 @@ footer { border-top: 1px solid var(--border); }
 /* ── Print ───────────────────────────────────────── */
 @media print {
     body { background: #fff; color: #111; }
-    nav, footer, #form { display: none; }
+    nav, footer, #form, .monitor-form { display: none; }
     main { max-width: 100%; padding: 0; }
     .accordion-body { max-height: none !important; padding: 0.75rem 1rem !important; }
     .table-wrap { border-color: #ddd; }

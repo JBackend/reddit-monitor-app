@@ -7,6 +7,7 @@ analyzes with Claude AI, and returns a structured intelligence report.
 Standalone function — no external package imports.
 """
 
+import datetime
 import hashlib
 import json
 import os
@@ -49,6 +50,7 @@ def _cache_key(body):
     """Generate a deterministic cache key from request body."""
     normalized = {
         "brand": (body.get("brand") or "").strip().lower(),
+        "industry": sorted(t.strip().lower() for t in (body.get("industry") or []) if t.strip()) if isinstance(body.get("industry"), list) else (body.get("industry") or "").strip().lower(),
         "aliases": sorted(a.strip().lower() for a in (body.get("aliases") or [])),
         "competitors": sorted(c.strip().lower() for c in (body.get("competitors") or [])),
         "keywords": sorted(k.strip().lower() for k in (body.get("keywords") or [])),
@@ -138,11 +140,14 @@ def _pullpush_get(endpoint, params):
 # ---------------------------------------------------------------------------
 
 
-def generate_search_queries(brand, aliases, competitors, keywords):
+def generate_search_queries(brand, aliases, competitors, keywords, industry=None):
     """Auto-generate search queries from the provided brand info."""
     queries = []
 
     queries.append(brand)
+
+    if industry:
+        queries.append(f"{brand} {industry}")
 
     if keywords:
         queries.append(f"{brand} {keywords[0]}")
@@ -154,9 +159,13 @@ def generate_search_queries(brand, aliases, competitors, keywords):
         queries.append(f"{keywords[0]} {keywords[1]} recommendation")
     elif keywords:
         queries.append(f"{keywords[0]} recommendation")
+    elif industry:
+        queries.append(f"{industry} recommendation")
 
     if competitors and keywords:
         queries.append(f"{competitors[0]} {keywords[0]}")
+    elif competitors and industry:
+        queries.append(f"{competitors[0]} {industry}")
 
     # Deduplicate
     seen = set()
@@ -167,7 +176,7 @@ def generate_search_queries(brand, aliases, competitors, keywords):
             seen.add(q_lower)
             unique.append(q)
 
-    return unique[:4]
+    return unique[:5]
 
 
 def search_reddit(queries, subreddits):
@@ -325,13 +334,29 @@ def build_analysis_prompt(brand, aliases, competitors, keywords, posts):
         num_comments = post.get("num_comments", 0)
         permalink = post.get("permalink", "")
 
+        # Derive post URL
+        post_url = ""
+        if permalink:
+            post_url = permalink if permalink.startswith("http") else f"https://reddit.com{permalink}"
+
+        # Derive human-readable date from created_utc
+        post_date_str = ""
+        created_utc = post.get("created_utc")
+        if created_utc:
+            try:
+                dt = datetime.datetime.utcfromtimestamp(int(created_utc))
+                post_date_str = dt.strftime("%b %Y")
+            except (ValueError, TypeError, OSError):
+                post_date_str = ""
+
         posts_text += f"\n--- Post {i} [{priority}] ---\n"
         posts_text += f"Subreddit: r/{subreddit}\n"
         posts_text += f"Title: {title}\n"
         posts_text += f"Score: {score} | Comments: {num_comments}\n"
-        if permalink:
-            link = permalink if permalink.startswith("http") else f"https://reddit.com{permalink}"
-            posts_text += f"URL: {link}\n"
+        if post_date_str:
+            posts_text += f"Date: {post_date_str}\n"
+        if post_url:
+            posts_text += f"URL: {post_url}\n"
         if selftext:
             posts_text += f"Text: {selftext}\n"
 
@@ -398,6 +423,18 @@ The most valuable direct quotes from Reddit for marketing and product teams.
 
 ## 9. Executive Summary
 Provide 4-5 bullet points summarizing the most critical findings.
+
+## Citation Requirements
+
+Every major claim, insight, or data point MUST include an inline citation linking back to the source Reddit post. Use markdown links in this format:
+
+([r/subredditname, Mon YYYY](URL))
+
+For example: "Users find onboarding confusing ([r/humanresources, Jan 2025](https://reddit.com/...))."
+
+- Place citations immediately after the relevant claim
+- Include citations within table cells alongside evidence
+- Cite multiple posts when they support the same claim
 
 IMPORTANT:
 - Fill every table with real data from the posts above. If data is limited for a section, note that explicitly but still provide what you can.
@@ -469,15 +506,35 @@ def run_pipeline(body, client_ip=None):
     if not brand:
         return {"error": "The 'brand' field is required."}, 400
 
-    aliases = body.get("aliases") or []
+    industry_raw = body.get("industry") or []
+    if isinstance(industry_raw, str):
+        industry_raw = [industry_raw]
+    industry = " ".join(t.strip() for t in industry_raw if t.strip())
     competitors = body.get("competitors") or []
+    aliases = body.get("aliases") or []
     keywords = body.get("keywords") or []
     subreddits = body.get("subreddits") or []
 
-    has_optional = aliases or competitors or keywords or subreddits
-    if not has_optional:
+    # Smart defaults: auto-derive aliases if empty
+    if not aliases:
+        brand_lower = brand.lower()
+        brand_nospaces = brand_lower.replace(" ", "")
+        derived = [brand_lower]
+        if brand_nospaces != brand_lower:
+            derived.append(brand_nospaces)
+        derived.append(f"{brand_nospaces}.com")
+        aliases = derived
+
+    # Smart defaults: auto-derive keywords from industry if empty
+    if not keywords and industry:
+        # Split industry string into individual terms as keywords
+        industry_terms = [t.strip() for t in industry.replace(",", " ").split() if t.strip()]
+        keywords = industry_terms
+
+    # The 3 truly required fields: brand, industry, competitors
+    if not industry and not competitors:
         return {
-            "error": "At least one of 'aliases', 'competitors', 'keywords', or 'subreddits' must be provided."
+            "error": "At least 'industry' or 'competitors' must be provided alongside 'brand'."
         }, 400
 
     # --- 1b. Cache check ---
@@ -495,7 +552,7 @@ def run_pipeline(body, client_ip=None):
         return {"error": "ANTHROPIC_API_KEY environment variable is not set."}, 502
 
     # --- 2. Generate search queries ---
-    queries = generate_search_queries(brand, aliases, competitors, keywords)
+    queries = generate_search_queries(brand, aliases, competitors, keywords, industry=industry)
 
     # --- 3. Search Reddit via PullPush.io ---
     search_errors = []
@@ -550,6 +607,32 @@ def run_pipeline(body, client_ip=None):
         report, cost_estimate = call_claude_api(prompt, api_key)
     except RuntimeError as exc:
         return {"error": f"Claude API error: {str(exc)}"}, 502
+
+    # --- 9b. Prepend time range header to report ---
+    post_count = len(analyzed_posts)
+    timestamps = []
+    for p in analyzed_posts:
+        utc = p.get("created_utc")
+        if utc:
+            try:
+                timestamps.append(int(utc))
+            except (ValueError, TypeError):
+                pass
+
+    if timestamps and post_count > 0:
+        try:
+            min_dt = datetime.datetime.utcfromtimestamp(min(timestamps))
+            max_dt = datetime.datetime.utcfromtimestamp(max(timestamps))
+            date_range = f"{min_dt.strftime('%b %d, %Y')} \u2013 {max_dt.strftime('%b %d, %Y')}"
+            header_line = f"**Posts from: {date_range} | {post_count} posts analyzed**\n\n"
+        except (OSError, ValueError):
+            header_line = f"**{post_count} posts analyzed**\n\n"
+    elif post_count > 0:
+        header_line = f"**{post_count} posts analyzed**\n\n"
+    else:
+        header_line = "**No posts found**\n\n"
+
+    report = header_line + report
 
     # --- 10. Return report ---
     result = {
