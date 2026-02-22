@@ -50,7 +50,6 @@ def _cache_key(body):
     """Generate a deterministic cache key from request body."""
     normalized = {
         "brand": (body.get("brand") or "").strip().lower(),
-        "industry": sorted(t.strip().lower() for t in (body.get("industry") or []) if t.strip()) if isinstance(body.get("industry"), list) else (body.get("industry") or "").strip().lower(),
         "aliases": sorted(a.strip().lower() for a in (body.get("aliases") or [])),
         "competitors": sorted(c.strip().lower() for c in (body.get("competitors") or [])),
         "keywords": sorted(k.strip().lower() for k in (body.get("keywords") or [])),
@@ -140,14 +139,11 @@ def _pullpush_get(endpoint, params):
 # ---------------------------------------------------------------------------
 
 
-def generate_search_queries(brand, aliases, competitors, keywords, industry=None):
+def generate_search_queries(brand, aliases, competitors, keywords):
     """Auto-generate search queries from the provided brand info."""
     queries = []
 
     queries.append(brand)
-
-    if industry:
-        queries.append(f"{brand} {industry}")
 
     if keywords:
         queries.append(f"{brand} {keywords[0]}")
@@ -159,13 +155,9 @@ def generate_search_queries(brand, aliases, competitors, keywords, industry=None
         queries.append(f"{keywords[0]} {keywords[1]} recommendation")
     elif keywords:
         queries.append(f"{keywords[0]} recommendation")
-    elif industry:
-        queries.append(f"{industry} recommendation")
 
     if competitors and keywords:
         queries.append(f"{competitors[0]} {keywords[0]}")
-    elif competitors and industry:
-        queries.append(f"{competitors[0]} {industry}")
 
     # Deduplicate
     seen = set()
@@ -506,12 +498,8 @@ def run_pipeline(body, client_ip=None):
     if not brand:
         return {"error": "The 'brand' field is required."}, 400
 
-    industry_raw = body.get("industry") or []
-    if isinstance(industry_raw, str):
-        industry_raw = [industry_raw]
-    industry = " ".join(t.strip() for t in industry_raw if t.strip())
-    competitors = body.get("competitors") or []
     aliases = body.get("aliases") or []
+    competitors = body.get("competitors") or []
     keywords = body.get("keywords") or []
     subreddits = body.get("subreddits") or []
 
@@ -525,16 +513,10 @@ def run_pipeline(body, client_ip=None):
         derived.append(f"{brand_nospaces}.com")
         aliases = derived
 
-    # Smart defaults: auto-derive keywords from industry if empty
-    if not keywords and industry:
-        # Split industry string into individual terms as keywords
-        industry_terms = [t.strip() for t in industry.replace(",", " ").split() if t.strip()]
-        keywords = industry_terms
-
-    # The 3 truly required fields: brand, industry, competitors
-    if not industry and not competitors:
+    # Require brand + at least one of competitors or keywords
+    if not competitors and not keywords:
         return {
-            "error": "At least 'industry' or 'competitors' must be provided alongside 'brand'."
+            "error": "At least 'competitors' or 'keywords' must be provided alongside 'brand'."
         }, 400
 
     # --- 1b. Cache check ---
@@ -552,7 +534,7 @@ def run_pipeline(body, client_ip=None):
         return {"error": "ANTHROPIC_API_KEY environment variable is not set."}, 502
 
     # --- 2. Generate search queries ---
-    queries = generate_search_queries(brand, aliases, competitors, keywords, industry=industry)
+    queries = generate_search_queries(brand, aliases, competitors, keywords)
 
     # --- 3. Search Reddit via PullPush.io ---
     search_errors = []

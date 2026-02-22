@@ -475,14 +475,9 @@
                     <div class="form-error" id="error-brand-name">Brand name is required to generate your report</div>
                 </div>
                 <div class="form-group">
-                    <label for="industry">Industry <span class="required-star">*</span></label>
-                    <textarea id="industry" rows="3" placeholder="project management&#10;issue tracker&#10;dev tools" required></textarea>
-                    <div class="form-error" id="error-industry">Industry is required so we can find the right communities</div>
-                </div>
-                <div class="form-group">
                     <label for="aliases">Aliases <span class="optional-tag">OPTIONAL</span></label>
                     <textarea id="aliases" rows="3" placeholder="linear&#10;linear.app&#10;linear issue tracker"></textarea>
-                    <p class="form-hint">Leave blank and we'll figure it out, or fill in for more precise results</p>
+                    <p class="form-hint">One per line — lowercase variations, domains, abbreviations</p>
                 </div>
                 <div class="form-group">
                     <label for="competitors">Competitors <span class="required-star">*</span></label>
@@ -491,14 +486,15 @@
                     <p class="form-hint">One per line</p>
                 </div>
                 <div class="form-group">
-                    <label for="keywords">Industry keywords <span class="optional-tag">OPTIONAL</span></label>
+                    <label for="keywords">Industry keywords <span class="required-star">*</span></label>
                     <textarea id="keywords" rows="3" placeholder="project management&#10;issue tracker&#10;dev tools"></textarea>
-                    <p class="form-hint">Leave blank and we'll figure it out, or fill in for more precise results</p>
+                    <div class="form-error" id="error-keywords">Industry keywords are required so we can find the right communities</div>
+                    <p class="form-hint">One per line</p>
                 </div>
                 <div class="form-group">
                     <label for="subreddits">Subreddits <span class="optional-tag">OPTIONAL</span></label>
                     <textarea id="subreddits" rows="3" placeholder="programming&#10;devops&#10;startups"></textarea>
-                    <p class="form-hint">Leave blank and we'll figure it out, or fill in for more precise results</p>
+                    <p class="form-hint">One per line, without r/</p>
                 </div>
                 <div class="form-actions">
                     <button class="btn btn-generate" id="btn-generate">Generate Report</button>
@@ -650,13 +646,16 @@
     }
 
     // Clear errors on input
-    ['brand-name', 'industry'].forEach(id => {
+    ['brand-name'].forEach(id => {
         document.getElementById(id).addEventListener('input', () => {
             clearFieldError(id, 'error-' + id);
         });
     });
     document.getElementById('competitors').addEventListener('input', () => {
         clearFieldError('competitors', 'error-competitors');
+    });
+    document.getElementById('keywords').addEventListener('input', () => {
+        clearFieldError('keywords', 'error-keywords');
     });
 
     // ── Form submission ──
@@ -672,9 +671,9 @@
 
         // Collect form data
         const brand = document.getElementById('brand-name').value.trim();
-        const industry = document.getElementById('industry').value.trim();
         const lines = v => v.split('\n').map(l => l.trim()).filter(Boolean);
         const competitorLines = lines(document.getElementById('competitors').value);
+        const keywordLines = lines(document.getElementById('keywords').value);
 
         // Validate required fields
         let hasError = false;
@@ -688,20 +687,20 @@
             clearFieldError('brand-name', 'error-brand-name');
         }
 
-        if (!industry) {
-            showFieldError('industry', 'error-industry');
-            if (!firstInvalid) firstInvalid = 'industry';
-            hasError = true;
-        } else {
-            clearFieldError('industry', 'error-industry');
-        }
-
         if (competitorLines.length === 0) {
             showFieldError('competitors', 'error-competitors');
             if (!firstInvalid) firstInvalid = 'competitors';
             hasError = true;
         } else {
             clearFieldError('competitors', 'error-competitors');
+        }
+
+        if (keywordLines.length === 0) {
+            showFieldError('keywords', 'error-keywords');
+            if (!firstInvalid) firstInvalid = 'keywords';
+            hasError = true;
+        } else {
+            clearFieldError('keywords', 'error-keywords');
         }
 
         if (hasError) {
@@ -711,10 +710,9 @@
 
         const body = {
             brand: brand,
-            industry: lines(document.getElementById('industry').value),
             aliases: lines(document.getElementById('aliases').value),
             competitors: competitorLines,
-            keywords: lines(document.getElementById('keywords').value),
+            keywords: keywordLines,
             subreddits: lines(document.getElementById('subreddits').value),
         };
 
@@ -984,7 +982,6 @@
         try {
             const f = JSON.parse(savedForm);
             document.getElementById('brand-name').value = f.brand || '';
-            document.getElementById('industry').value = f.industry || '';
             document.getElementById('aliases').value = (f.aliases || []).join('\n');
             document.getElementById('competitors').value = (f.competitors || []).join('\n');
             document.getElementById('keywords').value = (f.keywords || []).join('\n');
